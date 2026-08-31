@@ -100,8 +100,9 @@
 
         loadJSONData();
 
+        
         function normalizeInput(input) {
-            return input.split('(')[0].trim().toLowerCase().replace(/[\s\-_/'\.#]+/g, '');
+            return input.toLowerCase().normalize('NFD').replace(/[\s\-_/'\.#]+/g, '');
         }
 
         function renderList(foundObjects) {
