@@ -6,6 +6,7 @@
     <title>Color Counter!</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
     <link rel="stylesheet" href="styles.css">
+    <!-- <link rel="icon" href="data:image/bmp;base64,Qk06AAAAAAAAADYAAAAoAAAAAQAAAAEAAAABACAAAAAAAAQAAAATCwAAEwsAAAAAAAAAAAAAAAAAAA=="> -->
 </head>
 <body>
 
@@ -91,8 +92,7 @@
     </div>
 
     <script>
-        // Game State Variables
-        let colorsGlobal = [];
+        const colorsGlobal = []; const LS = [];
         const userFoundColors = new Set(); 
         let winner = false;
         let currentSort = 'nav-reverse-chrono'; 
@@ -109,47 +109,44 @@
 
         const listContainer = document.getElementById('color-list');
 
-        // Load the JSON data asynchronously
-        async function loadJSONData() {
+        async function loadJSONData(set) {
             try {
-                const response = await fetch(`./colors_alt.json?v=${Date.now()}`);
+                if (LS.includes(set)) {throw new Error(`A set of this name has already been loaded. As it is most likely this set, it cannot be loaded again.`)}
+                const response = await fetch(`./${set}.json?v=${Date.now()}`);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP error! Status: ${response.status} (${response.statusText})`);
                 }
                 
-                colorsGlobal = await response.json();
+                let colorData = await response.json();
+                colorsGlobal.push(...colorData); LS.push(set)
             
             } catch (error) {
                 console.error("Error loading the JSON file:", error);
                 
                 const feedbackEl = document.querySelector('.feedback');
                 if (feedbackEl) {
-                    feedbackEl.textContent = `Failed to load color database: ${error.message}`;
+                    feedbackEl.textContent = `Failed to load color database ${set}: ${error.message}`;
                     feedbackEl.style.color = "red";
                 }
             }
         }
 
-        loadJSONData();
+        loadJSONData('colors_alt')
+        const normalizeInput = input => input.toUpperCase().toLowerCase().normalize("NFKD").replace(/[^\p{L}\p{N}]+/gu, '');
 
-        function normalizeInput(input) {
-            return input.toLowerCase().replace(/[\s\-_/'\.#]+/g, '');
-        }
 
         // Displays the list of found colors in the specified order
         function renderList(foundObjects) {
             listContainer.classList.remove('d-flex', 'flex-wrap');
             listContainer.innerHTML = "";
             foundObjects.forEach(color => {
-                const listItem = document.createElement('li');
-                listItem.innerHTML = `
+                const listItem = listContainer.appendChild(Object.assign(document.createElement('li'),{innerHTML: `
                     <div class='color-list-item'>
                         <div class='color-swatch' style='background-color: ${color["Hex (RGB)"]};'></div>
                         <div>${color["Name"]} - ${color["Hex (RGB)"]}</div>
                     </div>
-                `;
-                listContainer.appendChild(listItem);
+                `}));
             });
         }
 
@@ -191,15 +188,12 @@
             listContainer.style.paddingLeft = '0';
 
             foundObjects.forEach(color => {
-                const listItem = document.createElement('li');
-                listItem.classList.add('m-1');
-                listItem.innerHTML = `
+                const listItem = listContainer.appendChild(Object.assign(document.createElement('li'),{className: 'm-1', innerHTML: `
                     <div class='color-swatch' 
                         style='background-color: ${color["Hex (RGB)"]};' 
                         title='${color["Name"]} (${color["Hex (RGB)"]})'>
                     </div>
-                `;
-                listContainer.appendChild(listItem);
+                `}));
             });
         }
 
@@ -228,6 +222,13 @@
             });
         }
 
+        function findColsTo(ct) {do {userFoundColors.add(colorsGlobal[Math.floor(Math.random()*colorsGlobal.length)]["Name"])} // finds random color
+            while (userFoundColors.size < ct) // easily ensures final size is always ct
+                               /* updateListView() would go here if it was enough but it isn't. just manually find a color to update properly, as per usual. */}
+        function killColsTo(ct) {do {userFoundColors.delete([...userFoundColors][Math.floor(Math.random()*userFoundColors.size)])} // this is if you set it too high
+            while (userFoundColors.size > ct)} // there is a small edge case that may happen with while after but it shouldn't happen in our scenario
+        const setColsTo = ct => userFoundColors.size == ct ? null : userFoundColors.size < ct ? findColsTo(ct) : killColsTo(ct)
+        
         // Handle form submission
         document.getElementById('color-form').addEventListener("submit", (event) => {
             event.preventDefault();
