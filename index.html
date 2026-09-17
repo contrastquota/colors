@@ -18,20 +18,31 @@
             <img src="pfp.png" width="30" height="30" class="d-inline-block align-top" alt="illustration of Namsan tower in Seoul, South Korea">
             <span class="font-weight-light text-muted">github</span>
         </a>
-        
+
+        <button class="navbar-brand btn btn-link" id="timer-mode-button">
+            Timer Mode
+        </button>
+
         <!-- <a href="https://nameawoman.co.uk/">Based on Name 100 Women</a> -->
     </div>
     </nav>
 
     <div class="content">
-        <h1 style="text-align: center;">Color Counter</h1>
+        <a href="#" id="main-title" style="text-decoration: none; color: inherit;">
+            <h1 style="text-align: center;">Color Counter</h1>
+        </a>
+
         <p>Can you name 100 colors? Try to list as many as you can! Be sure to enter the <em>full</em> name (e.g. "Kelly Green").</p>
         <p><small>Warning: if you reload the page, you <em>will</em> lose your progress.</small></p>
+
+        <div id="timer-container" class="text-center my-2" style="display: none;">
+            <h3><span class="badge badge-danger" id="timer-display">15:00</span></h3>
+        </div>
         
         <p class="d-inline-flex align-items-center gap-1">Colors Found: <span id="counter" class="badge badge-primary mx-1">0</span> / 100</p>
         <ul class="nav nav-tabs mb-2">
             <li class="nav-item">
-                <a class="nav-link active" id="nav-reverse-chrono" aria-current="page" href="#">Reverse Chronological</a>
+                <a class="nav-link active" id="nav-reverse-chrono" aria-current="page" href="#">Normal</a>
             </li>
             <li class="nav-item" >
                 <a class="nav-link" id="nav-alphabetical" href="#">Alphabetical</a>
@@ -70,13 +81,23 @@
     </div>
 
     <script>
+        // Game State Variables
         let colorsGlobal = [];
         const userFoundColors = new Set(); 
         let winner = false;
         let currentSort = 'nav-reverse-chrono'; 
 
+        // Timer Mode Variables
+        const timerModeButton = document.getElementById('timer-mode-button');
+        const mainTitle = document.getElementById('main-title');
+        const timerContainer = document.getElementById('timer-container');
+        let isTimerMode = false;
+        let timerDuration = 15 * 60; // 15 minutes in seconds
+        let hasTimerStarted = false;
+
         const listContainer = document.getElementById('color-list');
 
+        // Load the JSON data asynchronously
         async function loadJSONData() {
             try {
                 const response = await fetch(`./colors_alt.json?v=${Date.now()}`);
@@ -101,9 +122,10 @@
         loadJSONData();
 
         function normalizeInput(input) {
-            return input.split('(')[0].toLowerCase().replace(/[\s\-_/'\.#]+/g, '');
+            return input.toLowerCase().replace(/[\s\-_/'\.#]+/g, '');
         }
 
+        // Displays the list of found colors in the specified order
         function renderList(foundObjects) {
             listContainer.classList.remove('d-flex', 'flex-wrap');
             listContainer.innerHTML = "";
@@ -197,6 +219,14 @@
         // Handle form submission
         document.getElementById('color-form').addEventListener("submit", (event) => {
             event.preventDefault();
+
+            // Start the timer on first submission if in timer mode
+            if (isTimerMode && !hasTimerStarted) {
+                hasTimerStarted = true;
+                var time = timerDuration, // your time in seconds here
+                    display = document.querySelector('#timer-display');
+                startTimer(time, display);
+            }
             
             const colorInput = document.getElementById('color-input');
             const feedbackEl = document.querySelector('.feedback');
@@ -271,6 +301,74 @@
             setActiveNavItem('nav-palette');
             displayFoundColorsPaletteView();
         });
+
+
+        // Source - https://stackoverflow.com/a/31559591
+        // Posted by Sotiris Kiritsis, modified by community. See post 'Timeline' for change history
+        // Retrieved 2026-09-16, License - CC BY-SA 3.0
+
+        function startTimer(duration, display) {
+            var timer = duration, minutes, seconds;
+            setInterval(function () {
+                minutes = parseInt(timer / 60, 10)
+                seconds = parseInt(timer % 60, 10);
+
+                minutes = minutes < 10 ? "0" + minutes : minutes;
+                seconds = seconds < 10 ? "0" + seconds : seconds;
+
+                display.textContent = minutes + ":" + seconds;
+
+                if (--timer < 0) {
+                    timer = 0;
+                    document.getElementById('color-input').disabled = true;
+                    document.querySelector('.feedback').textContent = "Time's up!";
+                    // timer = duration; // uncomment this line to reset timer automatically after reaching 0
+                }
+            }, 1000);
+        }
+
+        // End Attribution
+
+        // Resets the game state, clearing found colors and resetting the counter
+        function resetGameState() {
+            userFoundColors.clear();
+            winner = false;
+            document.getElementById('counter').textContent = '0';
+            document.querySelector('.feedback').textContent = '';
+            listContainer.innerHTML = '';
+            updateListView();
+        }
+
+        // Start timer mode or return to normal mode upon button click
+        timerModeButton.addEventListener('click', () => {
+            isTimerMode = !isTimerMode;
+            resetGameState();
+
+            if (isTimerMode) {
+                timerModeButton.textContent = 'Normal Mode';
+                mainTitle.innerHTML = '<h1 style="text-align: center;">Color Counter - Timer Mode</h1>';
+                timerContainer.style.display = 'block';
+            } else {
+                returnToNormalMode();
+            }
+        });
+
+        // Clicking on the main title while in timer mode returns to normal mode
+        mainTitle.addEventListener('click', () => {
+            if (isTimerMode) {
+                returnToNormalMode();
+            }
+        });
+
+        // Function to return to normal mode
+        function returnToNormalMode() {
+            isTimerMode = false;
+            timerModeButton.textContent = 'Timer Mode';
+            mainTitle.innerHTML = '<h1 style="text-align: center;">Color Counter</h1>';
+            timerContainer.style.display = 'none';
+            resetGameState();
+        }
+    
     </script>
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.12.9/dist/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
