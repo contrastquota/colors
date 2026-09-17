@@ -35,8 +35,18 @@
         <p>Can you name 100 colors? Try to list as many as you can! Be sure to enter the <em>full</em> name (e.g. "Kelly Green").</p>
         <p><small>Warning: if you reload the page, you <em>will</em> lose your progress.</small></p>
 
-        <div id="timer-container" class="text-center my-2" style="display: none;">
-            <h3><span class="badge badge-danger" id="timer-display">15:00</span></h3>
+        <div id="timer-container" class="text-center my-3" style="display: none;">
+            <div class="d-inline-flex align-items-center shadow-sm">
+                <span class="badge badge-danger font-weight-bold" id="timer-display" style="font-size: 1.2rem; padding: 0.5rem 1rem;">
+                    15:00
+                </span>
+                
+                <span id="timer-reset" hidden class="ml-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="timer-reset-btn">
+                        ↻ Reset
+                    </button>
+                </span>
+            </div>
         </div>
         
         <p class="d-inline-flex align-items-center gap-1">Colors Found: <span id="counter" class="badge badge-primary mx-1">0</span> / 100</p>
@@ -91,9 +101,11 @@
         const timerModeButton = document.getElementById('timer-mode-button');
         const mainTitle = document.getElementById('main-title');
         const timerContainer = document.getElementById('timer-container');
+        const timerResetButton = document.getElementById('timer-reset-btn');
         let isTimerMode = false;
         let timerDuration = 15 * 60; // 15 minutes in seconds
         let hasTimerStarted = false;
+        let timerInterval; // To store the interval ID for the timer
 
         const listContainer = document.getElementById('color-list');
 
@@ -223,8 +235,8 @@
             // Start the timer on first submission if in timer mode
             if (isTimerMode && !hasTimerStarted) {
                 hasTimerStarted = true;
-                var time = timerDuration, // your time in seconds here
-                    display = document.querySelector('#timer-display');
+                var time = timerDuration, display = document.querySelector('#timer-display');
+                document.getElementById('timer-reset').hidden = false;
                 startTimer(time, display);
             }
             
@@ -308,8 +320,9 @@
         // Retrieved 2026-09-16, License - CC BY-SA 3.0
 
         function startTimer(duration, display) {
+            clearInterval(timerInterval);
             var timer = duration, minutes, seconds;
-            setInterval(function () {
+            timerInterval = setInterval(function () {
                 minutes = parseInt(timer / 60, 10)
                 seconds = parseInt(timer % 60, 10);
 
@@ -319,7 +332,7 @@
                 display.textContent = minutes + ":" + seconds;
 
                 if (--timer < 0) {
-                    timer = 0;
+                    clearInterval(timerInterval);
                     document.getElementById('color-input').disabled = true;
                     document.querySelector('.feedback').textContent = "Time's up!";
                     // timer = duration; // uncomment this line to reset timer automatically after reaching 0
@@ -331,10 +344,20 @@
 
         // Resets the game state, clearing found colors and resetting the counter
         function resetGameState() {
+            clearInterval(timerInterval); // Stop any existing timer
             userFoundColors.clear();
             winner = false;
+
+            if (isTimerMode) {
+                hasTimerStarted = false;
+                document.getElementById('timer-display').textContent = "15:00";
+            }
+
+            // visually reset the counter and feedback
             document.getElementById('counter').textContent = '0';
             document.querySelector('.feedback').textContent = '';
+            document.getElementById('timer-reset').hidden = true;
+            document.getElementById('color-input').disabled = false;
             listContainer.innerHTML = '';
             updateListView();
         }
@@ -368,6 +391,10 @@
             timerContainer.style.display = 'none';
             resetGameState();
         }
+
+        timerResetButton.addEventListener('click', () => {
+            resetGameState();
+        });
     
     </script>
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
